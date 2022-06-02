@@ -656,13 +656,29 @@ class Kernel:
                     is_numpy = isinstance(v, np.ndarray)
                     is_torch = isinstance(v,
                                           torch.Tensor) if has_torch else False
+                    # Strip element shape information.
+                    real_shape = list(v.shape)
+                    print(real_shape)
+                    print(needed.element_dim)
+                    # if needed.element_dim != None and needed.element_dim > 0:
+                    #     print("AAAAA ", needed.layout)
+                    #     if needed.layout is Layout.SOA:
+                    #         real_shape = real_shape[needed.element_dim:]
+                    #     elif needed.layout is Layout.AOS:
+                    #         real_shape = real_shape[:needed.element_dim]
+                    #     else:
+                    #         raise ValueError(
+                    #             f'Specified element dim {needed.element_dim} but the layout is unknown {needed.layout}.'
+                    #         )
+                    real_shape[0] = 0
+                    print(real_shape)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         # Purpose: DO NOT GC |tmp|!
                         tmps.append(tmp)
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.ctypes.data),
-                            tmp.nbytes, v.shape)
+                            tmp.nbytes, real_shape)
                     elif is_torch:
                         is_ndarray = False
                         tmp, torch_callbacks = self.get_torch_callbacks(
@@ -670,7 +686,7 @@ class Kernel:
                         callbacks += torch_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement(), v.shape)
+                            tmp.element_size() * tmp.nelement(), real_shape)
                     else:
                         # For now, paddle.fluid.core.Tensor._ptr() is only available on develop branch
                         tmp, paddle_callbacks = self.get_paddle_callbacks(
@@ -678,7 +694,7 @@ class Kernel:
                         callbacks += paddle_callbacks
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp._ptr()),
-                            v.element_size() * v.size, v.shape)
+                            v.element_size() * v.size, real_shape)
 
                 elif isinstance(needed, MatrixType):
                     if id(needed.dtype) in primitive_types.real_type_ids:

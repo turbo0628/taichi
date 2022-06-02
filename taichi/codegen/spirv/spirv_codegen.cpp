@@ -565,30 +565,14 @@ class TaskCodegen : public IRVisitor {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
       const auto &element_shape = stmt->element_shape;
-      enum ExternalArrayLayout { layout_AOS = 0, layout_SOA = 1 };
-      const auto layout = stmt->element_dim <= 0 ? layout_AOS : layout_SOA;
+      const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS : ExternalArrayLayout::kSOA;
       const auto extra_args_member_index = ctx_attribs_->args().size();
-
-      // Determine the element shape position inside the indices vector
-      // TODO: change the outer layout in order to remove the element layout
-      // guess work
-      int element_shape_begin = -1;
-      int element_shape_end = -1;
-      if (element_shape.size() > 0) {
-        if (layout == layout_SOA) {
-          element_shape_begin = 0;
-          element_shape_end = element_shape.size();
-        } else {
-          element_shape_begin = num_indices - element_shape.size();
-          element_shape_end = num_indices;
-        }
-      }
-      for (int i = 0; i < num_indices; i++) {
-        // Skip expressions for element shapes.
-        if (i >= element_shape_begin && i < element_shape_end) {
-          continue;
-        }
-        std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
+      const auto element_indices_offset = (layout == ExternalArrayLayout::kSOA) ? 0 : num_indices - element_shape.size();
+      const auto array_indices_offset = (layout == ExternalArrayLayout::kSOA) ? element_shape.size() : 0;
+      // Exclude the indices inside elements.
+      // for (int i = element_shape.size(); i < num_indices; i++) {
+      for (int i = element_shape.size(); i < num_indices; i++) {
+        std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i); 
         const auto extra_arg_index = (arg_id * taichi_max_num_indices) + i;
         spirv::Value var_ptr = ir_->make_value(
             spv::OpAccessChain,
@@ -600,13 +584,13 @@ class TaskCodegen : public IRVisitor {
         ir_->register_value(var_name, var);
         size_var_names.push_back(std::move(var_name));
       }
-      int size_var_names_idx = 0;
+      size_t size_var_names_idx = 0;
       for (int i = 0; i < num_indices; i++) {
         spirv::Value size_var;
-        // Use immediate numbers to flatten index for element shapes.
-        if (i >= element_shape_begin && i < element_shape_end) {
-          size_var = ir_->uint_immediate_number(
-              ir_->i32_type(), element_shape[i - element_shape_begin]);
+        // Use immediate numbers to flatten element shape indices.
+        if (i >= element_indices_offset && i < element_indices_offset + element_shape.size()) {
+          size_var = ir_->int_immediate_number(
+              ir_->i32_type(), element_shape[i - element_indices_offset], false);
         } else {
           size_var = ir_->query_value(size_var_names[size_var_names_idx++]);
         }
@@ -2174,7 +2158,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
              task_res.spirv_code.size(), optimized_spv.size());
 
     // Enable to dump SPIR-V assembly of kernels
-#if 0
+#if 1
     std::string spirv_asm;
     spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
     auto kernel_name = tp.ti_kernel_name;
