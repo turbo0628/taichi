@@ -14,6 +14,8 @@ namespace lang {
 std::string snode_access_flag_name(SNodeAccessFlag type) {
   if (type == SNodeAccessFlag::block_local) {
     return "block_local";
+  } else if (type == SNodeAccessFlag::scratch_pad) {
+    return "scratch_pad";
   } else if (type == SNodeAccessFlag::read_only) {
     return "read_only";
   } else if (type == SNodeAccessFlag::mesh_local) {

@@ -33,7 +33,7 @@ class SNode;
 class Kernel;
 struct CompileConfig;
 
-enum class SNodeAccessFlag : int { block_local, read_only, mesh_local };
+enum class SNodeAccessFlag : int { block_local, scratch_pad, read_only, mesh_local };
 std::string snode_access_flag_name(SNodeAccessFlag type);
 
 class MemoryAccessOptions {

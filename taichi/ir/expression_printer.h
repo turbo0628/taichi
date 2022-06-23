@@ -152,6 +152,10 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit(expr->id.name());
   }
 
+  void visit(ScratchPadExpression *expr) override {
+    emit(expr->id.name());
+  }
+
   void visit(AtomicOpExpression *expr) override {
     const auto op_type = (std::size_t)expr->op_type;
     constexpr const char *names_table[] = {

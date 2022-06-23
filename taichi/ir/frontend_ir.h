@@ -22,6 +22,12 @@ struct ForLoopConfig {
   bool uniform{false};
 };
 
+// class FrontendScratchpadStmt : public Stmt {
+//   public:
+//   FrontendScratchpadStmt(size_t pad_size) : pad_size(pad_size) {}
+//   size_t pad_size;
+// }
+
 // Frontend Statements
 class FrontendExternalFuncStmt : public Stmt {
  public:
@@ -563,6 +569,21 @@ class LoopUniqueExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
+class ScratchPadExpression : public Expression {
+ public:
+ ScratchPadExpression(const Identifier &id, const size_t &size, const DataType &data_type) : id(id), size(size), data_type(data_type) {
+
+ }
+  void type_check(CompileConfig *config) override {}
+
+  void flatten(FlattenContext *ctx) override {}
+
+  Identifier id;
+  size_t size;
+  DataType data_type;
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
 class IdExpression : public Expression {
  public:
   Identifier id;
@@ -843,6 +864,9 @@ class ASTBuilder {
   Expr expr_alloca_local_tensor(const std::vector<int> &shape,
                                 const DataType &element_type,
                                 const ExprGroup &elements);
+  Expr expr_alloca_scratch_pad(const std::vector<int> &shape,
+                                const DataType &element_type);
+
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,

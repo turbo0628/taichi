@@ -486,6 +486,11 @@ def block_local(*args):
             get_runtime().prog.current_ast_builder().insert_snode_access_flag(
                 _ti_core.SNodeAccessFlag.block_local, v.ptr)
 
+def scratch_pad(*args):
+    assert len(args) == 1
+    assert isinstance(args[0], int)
+    return get_runtime().prog.current_ast_builder().expr_alloca_scratch_pad((args[0],), f32)
+    
 
 def mesh_local(*args):
     """Hints the compiler to cache the mesh attributes
@@ -732,6 +737,6 @@ __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
     'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
-    'global_thread_idx', 'assume_in_range', 'block_local', 'cache_read_only',
+    'global_thread_idx', 'assume_in_range', 'block_local', 'scratch_pad', 'cache_read_only',
     'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
 ]

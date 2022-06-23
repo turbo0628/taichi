@@ -273,6 +273,7 @@ void export_lang(py::module &m) {
 
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
       .value("block_local", SNodeAccessFlag::block_local)
+      .value("scratch_pad", SNodeAccessFlag::scratch_pad)
       .value("read_only", SNodeAccessFlag::read_only)
       .value("mesh_local", SNodeAccessFlag::mesh_local)
       .export_values();
@@ -295,6 +296,7 @@ void export_lang(py::module &m) {
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
+      .def("expr_alloca_scratch_pad", &ASTBuilder::expr_alloca_scratch_pad)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
       .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)
