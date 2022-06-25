@@ -12,11 +12,17 @@ namespace {
 void make_block_local_offload(OffloadedStmt *offload,
                               const CompileConfig &config,
                               const std::string &kernel_name) {
-  if (offload->task_type != OffloadedStmt::TaskType::struct_for)
-    return;
+  // if (offload->task_type != OffloadedStmt::TaskType::struct_for)
+  //   return;
 
   bool debug = config.debug;
+#if 1
+  TI_TRACE("IN BLOCK LOCAL OFFLOAD STMT");
+  // There should be only one scratch pad for the current hack.
+  // Create a scratch pad
+  auto pads = irpass::initialize_scratch_pad(offload);
 
+#else
   auto pads = irpass::initialize_scratch_pad(offload);
 
   std::size_t bls_offset_in_bytes = 0;
@@ -332,6 +338,7 @@ void make_block_local_offload(OffloadedStmt *offload,
   }  // for (auto &pad : pads->pads)
 
   offload->bls_size = std::max(std::size_t(1), bls_offset_in_bytes);
+#endif
 }
 
 }  // namespace

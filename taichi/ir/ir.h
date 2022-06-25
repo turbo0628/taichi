@@ -39,27 +39,44 @@ std::string snode_access_flag_name(SNodeAccessFlag type);
 class MemoryAccessOptions {
  public:
   void add_flag(SNode *snode, SNodeAccessFlag flag) {
+    if (flag == SNodeAccessFlag::block_local) {
+      scratch_pad_snodes.push_back(snode);
+    }
+    TI_TRACE("ADD SNODE {} {} FLAG {}", (uintptr_t)snode, snode->name, flag);
     options_[snode].insert(flag);
+    TI_TRACE("option size {}", options_[snode].size());
   }
 
   bool has_flag(SNode *snode, SNodeAccessFlag flag) const {
-    if (auto it = options_.find(snode); it != options_.end())
+    if (auto it = options_.find(snode); it != options_.end()) {
+      TI_TRACE("FLAG {} COUNT {}", flag, it->second.count(flag));
       return it->second.count(flag) != 0;
+    }
     else
       return false;
   }
 
   std::vector<SNode *> get_snodes_with_flag(SNodeAccessFlag flag) const {
+    if (flag == SNodeAccessFlag::block_local) {
+      return scratch_pad_snodes;
+    }
     std::vector<SNode *> snodes;
     for (const auto &opt : options_) {
+      TI_TRACE("RETRIEVE FLAG {}", opt.first->name);
+      TI_TRACE("RETRIEVE FLAG {}", opt.first->name);
+
       if (has_flag(opt.first, flag)) {
+        TI_TRACE("YES!");
         snodes.push_back(opt.first);
+      } else {
+        TI_TRACE("OHHHHH NO!!!!!");
       }
     }
     return snodes;
   }
 
   void clear() {
+    TI_TRACE("AHHHHHH I AM CLEARED!!!!!!!");
     options_.clear();
   }
 
@@ -70,6 +87,7 @@ class MemoryAccessOptions {
 
  private:
   std::unordered_map<SNode *, std::unordered_set<SNodeAccessFlag>> options_;
+  std::vector<SNode *> scratch_pad_snodes;
 };
 
 #define PER_STATEMENT(x) class x;

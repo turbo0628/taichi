@@ -180,8 +180,8 @@ void offload_to_executable(IRNode *ir,
     irpass::make_thread_local(ir, config);
     print("Make thread local");
   }
-
-  if (is_extension_supported(config.arch, Extension::mesh)) {
+  if (0) {
+  // if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::make_mesh_thread_local(ir, config, {kernel->get_name()});
     print("Make mesh thread local");
     if (config.make_mesh_block_local && config.arch == Arch::cuda) {
@@ -197,19 +197,19 @@ void offload_to_executable(IRNode *ir,
     print("Make block local");
   }
 
-  if (is_extension_supported(config.arch, Extension::mesh)) {
-    irpass::demote_mesh_statements(ir, config, {kernel->get_name()});
-    print("Demote mesh statements");
-  }
+  // if (is_extension_supported(config.arch, Extension::mesh)) {
+  //   irpass::demote_mesh_statements(ir, config, {kernel->get_name()});
+  //   print("Demote mesh statements");
+  // }
 
-  irpass::demote_atomics(ir, config);
-  print("Atomics demoted II");
-  irpass::analysis::verify(ir);
+  // irpass::demote_atomics(ir, config);
+  // print("Atomics demoted II");
+  // irpass::analysis::verify(ir);
 
-  if (is_extension_supported(config.arch, Extension::quant) &&
-      ir->get_config().quant_opt_atomic_demotion) {
-    irpass::analysis::gather_uniquely_accessed_bit_structs(ir, amgr.get());
-  }
+  // if (is_extension_supported(config.arch, Extension::quant) &&
+  //     ir->get_config().quant_opt_atomic_demotion) {
+  //   irpass::analysis::gather_uniquely_accessed_bit_structs(ir, amgr.get());
+  // }
 
   irpass::remove_range_assumption(ir);
   print("Remove range assumption");
@@ -223,30 +223,30 @@ void offload_to_executable(IRNode *ir,
     print("Access lowered");
     irpass::analysis::verify(ir);
 
-    irpass::die(ir);
-    print("DIE");
-    irpass::analysis::verify(ir);
+    // irpass::die(ir);
+    // print("DIE");
+    // irpass::analysis::verify(ir);
 
     irpass::flag_access(ir);
     print("Access flagged III");
     irpass::analysis::verify(ir);
   }
 
-  irpass::demote_operations(ir, config);
-  print("Operations demoted");
+  // irpass::demote_operations(ir, config);
+  // print("Operations demoted");
 
   irpass::full_simplify(ir, config, {lower_global_access, kernel->program});
   print("Simplified IV");
 
-  if (determine_ad_stack_size) {
-    irpass::determine_ad_stack_size(ir, config);
-    print("Autodiff stack size determined");
-  }
+  // if (determine_ad_stack_size) {
+  //   irpass::determine_ad_stack_size(ir, config);
+  //   print("Autodiff stack size determined");
+  // }
 
-  if (is_extension_supported(config.arch, Extension::quant)) {
-    irpass::optimize_bit_struct_stores(ir, config, amgr.get());
-    print("Bit struct stores optimized");
-  }
+  // if (is_extension_supported(config.arch, Extension::quant)) {
+  //   irpass::optimize_bit_struct_stores(ir, config, amgr.get());
+  //   print("Bit struct stores optimized");
+  // }
 
   // Final field registration correctness & type checking
   irpass::type_check(ir, config);

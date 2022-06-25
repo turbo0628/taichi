@@ -481,10 +481,22 @@ def block_local(*args):
     if impl.current_cfg().opt_level == 0:
         _logging.warn("""opt_level = 1 is enforced to enable bls analysis.""")
         impl.current_cfg().opt_level = 1
+    bls_size = 0
+    assert len(args) == 2
     for a in args:
-        for v in a._get_field_members():
-            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
-                _ti_core.SNodeAccessFlag.block_local, v.ptr)
+        if isinstance(a, int):
+            bls_size = a
+            get_runtime().prog.current_ast_builder().expr_alloca_scratch_pad((bls_size,), f32, v.ptr)
+        else:
+            for v in a._get_field_members():
+                get_runtime().prog.current_ast_builder().insert_snode_access_flag(
+                    _ti_core.SNodeAccessFlag.block_local, v.ptr)
+
+def nbody_get_coord_diff(offset_expr):
+    return 1.0, 1.0, 1.0
+
+def nbody_set_val(field):
+    pass
 
 def scratch_pad(*args):
     assert len(args) == 1
@@ -737,6 +749,6 @@ __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'wasm', 'arm64', 'cc', 'cpu',
     'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension', 'loop_config',
-    'global_thread_idx', 'assume_in_range', 'block_local', 'scratch_pad', 'cache_read_only',
+    'global_thread_idx', 'assume_in_range', 'block_local', 'nbody_set_val', 'nbody_get_coord_diff', 'scratch_pad', 'cache_read_only',
     'init', 'mesh_local', 'no_activate', 'reset', 'mesh_patch_idx'
 ]

@@ -865,7 +865,7 @@ class ASTBuilder {
                                 const DataType &element_type,
                                 const ExprGroup &elements);
   Expr expr_alloca_scratch_pad(const std::vector<int> &shape,
-                                const DataType &element_type);
+                                const DataType &element_type, const Expr& field);
 
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   void create_assert_stmt(const Expr &cond,
