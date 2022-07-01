@@ -396,7 +396,9 @@ void force_set_bls_size_offload(OffloadedStmt* offload, int pad_size = 128) {
     auto src_stride = fetch_block->push_back<ConstStmt>(TypedConstant((int32) block_dim));
     auto src_offset_stride = fetch_block->push_back<BinaryOpStmt>(BinaryOpType::mul, loop_idx, src_stride);
     auto src_offset_elem = fetch_block->push_back<BinaryOpStmt>(BinaryOpType::add, src_offset_stride, tid);
-    auto src_offset = fetch_block->push_back<BinaryOpStmt>(BinaryOpType::mul, src_offset_elem, fetch_block->push_back<ConstStmt>(TypedConstant((int32) sizeof(float)))));
+    auto src_offset = fetch_block->push_back<BinaryOpStmt>(
+        BinaryOpType::mul, src_offset_elem,
+        fetch_block->push_back<ConstStmt>(TypedConstant((int32)sizeof(float))));
 
     auto dst_offset = fetch_block->push_back<BinaryOpStmt>(
         BinaryOpType::mul, tid,
@@ -425,8 +427,8 @@ void force_set_bls_size_offload(OffloadedStmt* offload, int pad_size = 128) {
         // src_val = bodies[src_offset + 0/1/2]
         std::vector<Stmt *> global_load_index;
         global_load_index.push_back(src_offset);
-        global_load_index.push_back(
-            fetch_block->push_back<ConstStmt>(TypedConstant(index_xyz)));
+        global_load_index.push_back(fetch_block->push_back<ConstStmt>(
+            TypedConstant((int32_t)(index_xyz * sizeof(float)))));
 
         auto src_base_ptr = fetch_block->push_back<GlobalPtrStmt>(
             global_ptr_stmt->snodes, global_load_index, false);
@@ -462,9 +464,13 @@ void force_set_bls_size_offload(OffloadedStmt* offload, int pad_size = 128) {
         auto load_local_offset = bls_load.push_back<BinaryOpStmt>(
             BinaryOpType::add, inner_for_loop_idx,
             bls_load.push_back<ConstStmt>(
-                TypedConstant((int32_t)index_xyz * pad_size * sizeof(float))));
+                TypedConstant((int32_t)index_xyz * pad_size )));
+        auto load_local_offset_bytes = bls_load.push_back<BinaryOpStmt>(
+            BinaryOpType::mul, load_local_offset,
+            bls_load.push_back<ConstStmt>(
+                TypedConstant((int32_t)sizeof(float))));
         auto block_local_ptr = bls_load.push_back<BlockLocalPtrStmt>(
-            load_local_offset, data_type);
+            load_local_offset_bytes, data_type);
         global_ptr_stmt->replace_with(std::move(bls_load));
       
         index_xyz++;
