@@ -911,28 +911,51 @@ Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
   return var;
 }
 
-// Expr ASTBuilder::expr_alloca_scratch_pad(const std::vector<int> &shape,
-//                                         const DataType &element_type) {
-//   auto var = Expr(std::make_shared<ScratchPadExpression>(get_next_id(), shape[0], element_type));
-//   this->insert(std::make_unique<FrontendAllocaStmt>(
-//       std::static_pointer_cast<ScratchPadExpression>(var.expr)->id, shape,
-//       element_type));
-//   var->ret_type = this->get_last_stmt()->ret_type;       
-//   return var;                                 
-// }
-
 Expr ASTBuilder::expr_alloca_scratch_pad(const std::vector<int> &shape,
-                                        const DataType &element_type,
-                                        const Expr &field) {
+                                        const DataType &element_type, const Expr &field) {
+  // auto var = Expr(std::make_shared<ScratchPadExpression>(get_next_id(), shape[0], element_type));
+  // this->insert(std::make_unique<FrontendAllocaStmt>(
+  //     std::static_pointer_cast<ScratchPadExpression>(var.expr)->id, shape,
+  //     element_type));
+  // var->ret_type = this->get_last_stmt()->ret_type;       
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
-      element_type));
+      element_type, true));
   var->ret_type = this->get_last_stmt()->ret_type;
+  return var;                                 
+}
+
+void ASTBuilder::nbody_set_scratch_pad_val(Stmt &dest_offset, const Expr &src_field, const Expr &src_offset) {
+   
+  auto tid = this->insert_thread_idx_expr();
+  this->insert(std::make_unique<BlockLocalPtrStmt>(&dest_offset, DataType(PrimitiveType::f32)));
+}
+
+// Expr ASTBuilder::expr_alloca_scratch_pad(const std::vector<int> &shape,
+//                                         const DataType &element_type,
+//                                         const Expr &field) {
+//   auto var = Expr(std::make_shared<GlobalVariableExpression>(PrimitiveType::f32, get_next_id()));
+//   this->insert(std::make_unique<FrontendAllocaStmt>(
+//       std::static_pointer_cast<GlobalVariableExpression>(var.expr)->id, shape,
+//       element_type, true));
+//   var->ret_type = this->get_last_stmt()->ret_type;
+//   return var;
+// }
+
+void ASTBuilder::insert_scratch_pad(const std::vector<int> &shape,
+                                        const DataType &element_type,
+                                        const Expr &field) {
+
+  // auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
+  // this->insert(std::make_unique<FrontendAllocaStmt>(
+  //     std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
+  //     element_type));
+  // var->ret_type = this->get_last_stmt()->ret_type;
   // auto stmt = std::make_unique<FrontendAllocaStmt>(shape, element_type);
   // stmt->set_tb(tb);
   // this->insert(std::move(stmt));
-  return var;
+  // return var;
 }
 
 void ASTBuilder::expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {

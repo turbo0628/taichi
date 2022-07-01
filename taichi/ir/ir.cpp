@@ -270,6 +270,14 @@ std::unique_ptr<Stmt> Block::extract(Stmt *stmt) {
   TI_ERROR("stmt not found");
 }
 
+void Block::concat(Block* block) {
+  for (int i = 0; i < block->statements.size(); ++i) {
+    auto stmt = block->statements[i].get();
+    stmt->parent = this;
+    statements.push_back(std::move(block->statements[i]));
+  } 
+}
+
 Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
   return insert_at(std::move(stmt), locate(location));
 }

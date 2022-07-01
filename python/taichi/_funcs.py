@@ -237,9 +237,6 @@ def svd3d(A, dt, iters=None):
         sigma(i, i)._assign(sig_entries[i])
     return U, sigma, V
 
-def nbody_kernel_proto(A, B, block_dim = 100):
-    pass
-    
 
 @func
 def eig2x2(A, dt):

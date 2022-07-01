@@ -73,6 +73,9 @@ void make_mesh_block_local(IRNode *root,
 void demote_mesh_statements(IRNode *root,
                             const CompileConfig &config,
                             const DemoteMeshStatements::Args &args);
+void force_set_bls_size(IRNode *root, 
+                        const CompileConfig &config);
+
 bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
 bool lower_access(IRNode *root,

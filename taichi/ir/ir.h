@@ -645,6 +645,8 @@ class Block : public IRNode {
   std::unique_ptr<Stmt> extract(int location);
   std::unique_ptr<Stmt> extract(Stmt *stmt);
 
+  void concat(Block* stmt_block);
+
   // Returns stmt.get()
   Stmt *insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
   Stmt *insert_at(std::unique_ptr<Stmt> &&stmt, stmt_vector::iterator location);

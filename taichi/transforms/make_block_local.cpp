@@ -12,17 +12,10 @@ namespace {
 void make_block_local_offload(OffloadedStmt *offload,
                               const CompileConfig &config,
                               const std::string &kernel_name) {
-  // if (offload->task_type != OffloadedStmt::TaskType::struct_for)
-  //   return;
+  if (offload->task_type != OffloadedStmt::TaskType::struct_for)
+    return;
 
   bool debug = config.debug;
-#if 1
-  TI_TRACE("IN BLOCK LOCAL OFFLOAD STMT");
-  // There should be only one scratch pad for the current hack.
-  // Create a scratch pad
-  auto pads = irpass::initialize_scratch_pad(offload);
-
-#else
   auto pads = irpass::initialize_scratch_pad(offload);
 
   std::size_t bls_offset_in_bytes = 0;
@@ -338,7 +331,148 @@ void make_block_local_offload(OffloadedStmt *offload,
   }  // for (auto &pad : pads->pads)
 
   offload->bls_size = std::max(std::size_t(1), bls_offset_in_bytes);
-#endif
+}
+
+void force_set_bls_size_offload(OffloadedStmt* offload, int pad_size = 128) {
+    // Hack for the nbody loop optimization
+    offload->bls_size = pad_size * 3 * sizeof(float);
+    int dim = 1;
+    RangeForStmt *pStmt = nullptr;
+    int stmt_id = -1;
+    for (int s = 0; s < offload->body->statements.size(); ++s) {
+      if (auto stmt_in_body =
+              offload->body->statements[s]->cast<RangeForStmt>()) {
+        TI_TRACE("Inner For stmt in offload body");
+        TI_TRACE("WILL THROW THINGS INTO THIS BODY");
+        pStmt = stmt_in_body;
+        stmt_id = s;
+        break;
+      }
+    }
+    if (pStmt == nullptr)
+      return;
+
+    auto tid =
+        offload->body->insert(std::make_unique<LoopLinearIndexStmt>(offload), 0);
+    auto fetch_block = std::make_unique<Block>();
+    int block_dim = pad_size;
+
+    RangeForStmt* inner_for_stmt;
+    for (int s = 0; s < pStmt->body->statements.size(); ++s) {
+      if (inner_for_stmt = pStmt->body->statements[s]->cast<RangeForStmt>())
+        break;
+    }
+    TI_TRACE("Inner for stmt {}", (uintptr_t) inner_for_stmt);
+
+    /**************************************************************/
+    /* CUDA Fetch data equivalent:
+    /* int tile = loop_id;
+    /* float tpos_x = p[(tile * blockDim.x + threadIdx.x) * 4];
+    /* float tpos_y = p[(tile * blockDim.x + threadIdx.x) * 4 + 1];
+    /* float tpos_z = p[(tile * blockDim.x + threadIdx.x) * 4 + 2];
+    /* __shared__ float spos[BLOCK_SIZE * 3];
+    /* spos[threadIdx.x] = tpos_x;
+    /* spos[2 * blockDim.x + threadIdx.x] = tpos_y;
+    /* spos[3 * blockDim.x + threadIdx.x] = tpos_z;
+    /* __syncthreads();
+    /**************************************************************/
+    
+    // size_t src_offset = ($loop_id * blockDim.x + threadIdx.x) * 4
+
+    // Compute local offsets
+    // $i * blockDim.x + threadIdx.x
+    std::vector<Stmt*> local_offsets;
+    local_offsets.resize(3);
+    for (int i = 0; i < 3; ++i) {
+      auto offset = fetch_block->push_back<BinaryOpStmt>(
+          BinaryOpType::add, fetch_block->push_back<ConstStmt>(TypedConstant(i * pad_size)),
+          tid);
+      local_offsets[i] = fetch_block->push_back<BinaryOpStmt>(
+          BinaryOpType::mul, offset,
+          fetch_block->push_back<ConstStmt>(TypedConstant((int32) sizeof(float))));
+    }
+
+    auto loop_idx = fetch_block->push_back<LoopIndexStmt>(pStmt, 0);
+    auto src_stride = fetch_block->push_back<ConstStmt>(TypedConstant((int32) block_dim));
+    auto src_offset_stride = fetch_block->push_back<BinaryOpStmt>(BinaryOpType::mul, loop_idx, src_stride);
+    auto src_offset = fetch_block->push_back<BinaryOpStmt>(BinaryOpType::add, src_offset_stride, tid);
+
+    auto dst_offset = fetch_block->push_back<BinaryOpStmt>(
+        BinaryOpType::mul, tid,
+        fetch_block->push_back<ConstStmt>(TypedConstant(3)));
+
+    // We have 3 global ptr stmts
+    // Replace global ptr statement with the scratch pad load and accesses
+    // Step 1: Traverse inner loop to find the global ptr stmts
+
+    int index_xyz = 0; // 0 for x, 1 for y, 2 for z
+    for (int s = 0; s < inner_for_stmt->body->statements.size(); ++s) {
+      if (auto global_ptr_stmt = inner_for_stmt->body->statements[s]->cast<GlobalPtrStmt>()) {
+        TI_TRACE("FOUND GLOBAL PTR STMT");
+        /**************************************************************/
+        /* Move the global ptr stmt out of the loop and correct the offset
+        /**************************************************************/
+
+        // Load value from field.
+        // src_val = bodies[src_offset + 0/1/2]
+        std::vector<Stmt *> global_load_index;
+        global_load_index.push_back(src_offset);
+        global_load_index.push_back(
+            fetch_block->push_back<ConstStmt>(TypedConstant(index_xyz)));
+
+        auto src_base_ptr = fetch_block->push_back<GlobalPtrStmt>(
+            global_ptr_stmt->snodes, global_load_index, false);
+        auto src_val = fetch_block->push_back<GlobalLoadStmt>(src_base_ptr);
+
+        // smem[$index_xyz * blockDim.x + threadIdx.x] = pos
+        // auto block_offset = fetch_block->push_back<BinaryOpStmt>(
+        //     BinaryOpType::add,
+        //     fetch_block->push_back<ConstStmt>(
+        //         TypedConstant(index_xyz * pad_size)),
+        //     tid);
+        // auto local_store_offset = fetch_block->push_back<BinaryOpStmt>(
+        //     BinaryOpType::add, dst_offset, tid);
+        // auto local_store_offset_bytes = fetch_block->push_back<BinaryOpStmt>(
+        //     BinaryOpType::mul, local_store_offset,
+        //     fetch_block->push_back<ConstStmt>(
+        //         TypedConstant((int32)sizeof(float))));
+
+        // auto data_type = src_base_ptr->ret_type;
+        auto data_type = global_ptr_stmt->ret_type;
+        auto bls_ptr = fetch_block->push_back<BlockLocalPtrStmt>(
+            local_offsets[index_xyz], data_type);
+        auto bls_store =
+            fetch_block->push_back<GlobalStoreStmt>(bls_ptr, src_val);
+
+        /**************************************************************/
+        /* Replace this global ptr stmt to access from scratch pad.
+        /**************************************************************/
+        // bodies[j, 0/1/2] -> smem[0/1/2 * blockDim.x + threadIdx.x]
+        VecStatement bls_load;
+        // auto local_load_offset = bls_load.push_back<BinaryOpStmt>(
+        //     BinaryOpType::add,
+        //     bls_load.push_back<ConstStmt>(
+        //         TypedConstant(index_xyz * pad_size)),
+        //     tid);
+        // auto local_load_offset_bytes = bls_load.push_back<BinaryOpStmt>(
+        //     BinaryOpType::mul, local_load_offset,
+        //     bls_load.push_back<ConstStmt>(
+        //         TypedConstant((int32) sizeof(float))));
+        // Multiply the offset with element size
+        auto block_local_ptr =
+            bls_load.push_back<BlockLocalPtrStmt>(local_offsets[index_xyz], data_type);
+        global_ptr_stmt->replace_with(std::move(bls_load));
+      
+        index_xyz++;
+        // The next stmt should be a global load, but the pointer should be good to load from scratch pad now.
+      }
+    }
+
+    fetch_block->concat(pStmt->body.get());
+
+    fetch_block->parent_stmt = pStmt->body->parent_stmt;
+    fetch_block->kernel = pStmt->body->kernel;
+    pStmt->body = std::move(fetch_block);
 }
 
 }  // namespace
@@ -355,14 +489,27 @@ void make_block_local(IRNode *root,
 
   if (auto root_block = root->cast<Block>()) {
     for (auto &offload : root_block->statements) {
-      make_block_local_offload(offload->cast<OffloadedStmt>(), config,
-                               args.kernel_name);
+        make_block_local_offload(offload->cast<OffloadedStmt>(), config,
+                                 args.kernel_name);
     }
   } else {
     make_block_local_offload(root->as<OffloadedStmt>(), config,
                              args.kernel_name);
   }
   type_check(root, config);
+}
+
+void force_set_bls_size(IRNode *root, 
+                        const CompileConfig &config) {
+  if (auto root_block = root->cast<Block>()) {
+    for (auto &offload : root_block->statements) {
+      TI_TRACE("FORCE SET BLS SIZE");
+      force_set_bls_size_offload(offload->cast<OffloadedStmt>());
+    }
+  } else {
+    TI_TRACE("FORCE SET BLS SIZE FOR ROOT OFFLOAD");
+    force_set_bls_size_offload(root->as<OffloadedStmt>());
+  }
 }
 
 }  // namespace irpass

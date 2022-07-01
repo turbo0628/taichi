@@ -136,6 +136,21 @@ void CodeGenLLVM::visit(Block *stmt_list) {
 }
 
 void CodeGenLLVM::visit(AllocaStmt *stmt) {
+  // TI_TRACE("Alloca stmt: PAD? {}", stmt->is_scratch_pad_);
+  // if (stmt->is_scratch_pad_) {
+  //   TI_TRACE("Creating bls buffer");
+  //   auto tensor_type = stmt->ret_type->cast<TensorType>();
+  //   auto shape = tensor_type->get_shape();
+  //   TI_TRACE("Length {}", shape[0]);
+  //   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
+  //                                    shape[0] * sizeof(float));
+  //   bls_buffer = new llvm::GlobalVariable(
+  //       *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
+  //       "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,
+  //       3 /*addrspace=shared*/);
+  //   bls_buffer->setAlignment(llvm::MaybeAlign(8)); 
+  //   return;
+  // }
   if (stmt->ret_type->is<TensorType>()) {
     auto tensor_type = stmt->ret_type->cast<TensorType>();
     auto type = tlctx->get_data_type(tensor_type->get_element_type());
@@ -2055,8 +2070,10 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
 void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       (stmt->loop->as<OffloadedStmt>()->task_type ==
+           OffloadedStmt::TaskType::range_for ||
+      stmt->loop->as<OffloadedStmt>()->task_type ==
            OffloadedStmt::TaskType::struct_for ||
-       stmt->loop->as<OffloadedStmt>()->task_type ==
+      stmt->loop->as<OffloadedStmt>()->task_type ==
            OffloadedStmt::TaskType::mesh_for)) {
     llvm_val[stmt] = create_call("thread_idx");
   } else {

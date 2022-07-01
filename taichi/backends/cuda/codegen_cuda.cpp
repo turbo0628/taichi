@@ -577,7 +577,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   void visit(OffloadedStmt *stmt) override {
     stat.add("codegen_offloaded_tasks");
-    stmt->bls_size = 128;
+    // stmt->bls_size = 128;
     if (stmt->bls_size > 0)
       create_bls_buffer(stmt);
 #if defined(TI_WITH_CUDA)

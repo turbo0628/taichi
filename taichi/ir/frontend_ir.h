@@ -68,6 +68,8 @@ class FrontendExprStmt : public Stmt {
 class FrontendAllocaStmt : public Stmt {
  public:
   Identifier ident;
+  std::vector<int> scratch_pad_size;
+  bool is_scratch_pad;
 
   FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
@@ -75,8 +77,14 @@ class FrontendAllocaStmt : public Stmt {
 
   FrontendAllocaStmt(const Identifier &lhs,
                      std::vector<int> shape,
-                     DataType element)
+                     DataType element, 
+                     bool is_scratch_pad = false)
       : ident(lhs) {
+    this->scratch_pad_size.clear();
+    if (is_scratch_pad) {
+      this->scratch_pad_size = shape;
+      this->is_scratch_pad = is_scratch_pad;
+    }
     ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
   }
 
@@ -866,7 +874,7 @@ class ASTBuilder {
                                 const ExprGroup &elements);
   Expr expr_alloca_scratch_pad(const std::vector<int> &shape,
                                 const DataType &element_type, const Expr& field);
-
+  void nbody_set_scratch_pad_val(Stmt &dest_offset, const Expr &src_field, const Expr &src_offset); 
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
@@ -884,6 +892,8 @@ class ASTBuilder {
   void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
   void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
 
+  void insert_scratch_pad(const std::vector<int> &shape,
+                          const DataType &element_type, const Expr& field);
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();
 

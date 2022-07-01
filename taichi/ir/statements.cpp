@@ -271,6 +271,7 @@ std::unique_ptr<Stmt> RangeForStmt::clone() const {
       begin, end, body->clone(), bit_vectorize, num_cpu_threads, block_dim,
       strictly_serialized);
   new_stmt->reversed = reversed;
+  new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
 

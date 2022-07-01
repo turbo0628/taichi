@@ -64,6 +64,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendAllocaStmt *stmt) override {
+    TI_TRACE("Lowering frontend alloca stmt, scratch pad {}", stmt->is_scratch_pad);
     auto block = stmt->parent;
     auto ident = stmt->ident;
     TI_ASSERT(block->local_var_to_stmt.find(ident) ==
@@ -71,7 +72,7 @@ class LowerAST : public IRVisitor {
     if (stmt->ret_type->is<TensorType>()) {
       auto tensor_type = stmt->ret_type->cast<TensorType>();
       auto lowered = std::make_unique<AllocaStmt>(
-          tensor_type->get_shape(), tensor_type->get_element_type());
+          tensor_type->get_shape(), tensor_type->get_element_type(), stmt->is_scratch_pad);
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
       stmt->parent->replace_with(stmt, std::move(lowered));
     } else {

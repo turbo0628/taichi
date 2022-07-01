@@ -20,15 +20,22 @@ class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
     ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
+    is_scratch_pad_ = 0;
     TI_STMT_REG_FIELDS;
   }
 
   AllocaStmt(int width, DataType type) {
+    is_scratch_pad_ = 0;
     ret_type = TypeFactory::create_vector_or_scalar_type(width, type);
     TI_STMT_REG_FIELDS;
   }
 
-  AllocaStmt(const std::vector<int> &shape, DataType type) {
+  AllocaStmt(const std::vector<int> &shape, DataType type, bool is_scratch_pad = false) {
+    if(is_scratch_pad) {
+    this->is_scratch_pad_ = 1;
+    } else {
+    this->is_scratch_pad_ = 0;
+    }
     ret_type = TypeFactory::create_tensor_type(shape, type);
     TI_STMT_REG_FIELDS;
   }
@@ -41,7 +48,9 @@ class AllocaStmt : public Stmt {
     return false;
   }
 
+  int is_scratch_pad_;
   TI_STMT_DEF_FIELDS(ret_type);
+  // TI_STMT_DEF_FIELDS(is_scratch_pad_);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -773,6 +782,8 @@ class RangeForStmt : public Stmt {
   int block_dim;
   bool strictly_serialized;
   std::string range_hint;
+  MemoryAccessOptions mem_access_opt;
+
 
   RangeForStmt(Stmt *begin,
                Stmt *end,
