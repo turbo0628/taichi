@@ -395,7 +395,8 @@ void force_set_bls_size_offload(OffloadedStmt* offload, int pad_size = 128) {
     auto loop_idx = fetch_block->push_back<LoopIndexStmt>(pStmt, 0);
     auto src_stride = fetch_block->push_back<ConstStmt>(TypedConstant((int32) block_dim));
     auto src_offset_stride = fetch_block->push_back<BinaryOpStmt>(BinaryOpType::mul, loop_idx, src_stride);
-    auto src_offset = fetch_block->push_back<BinaryOpStmt>(BinaryOpType::add, src_offset_stride, tid);
+    auto src_offset_elem = fetch_block->push_back<BinaryOpStmt>(BinaryOpType::add, src_offset_stride, tid);
+    auto src_offset = fetch_block->push_back<BinaryOpStmt>(BinaryOpType::mul, src_offset_elem, fetch_block->push_back<ConstStmt>(TypedConstant((int32) sizeof(float)))));
 
     auto dst_offset = fetch_block->push_back<BinaryOpStmt>(
         BinaryOpType::mul, tid,
@@ -404,8 +405,15 @@ void force_set_bls_size_offload(OffloadedStmt* offload, int pad_size = 128) {
     // We have 3 global ptr stmts
     // Replace global ptr statement with the scratch pad load and accesses
     // Step 1: Traverse inner loop to find the global ptr stmts
+    // auto inner_for_loop_idx = fetch_block->push_back<LoopIndexStmt>(inner_for_stmt, 0);
 
     int index_xyz = 0; // 0 for x, 1 for y, 2 for z
+    LoopIndexStmt *inner_for_loop_idx = nullptr;
+    for (int s = 0; s < inner_for_stmt->body->statements.size(); ++s) {
+      if (inner_for_loop_idx = inner_for_stmt->body->statements[s]->cast<LoopIndexStmt>()) {
+        break;
+      }
+    }
     for (int s = 0; s < inner_for_stmt->body->statements.size(); ++s) {
       if (auto global_ptr_stmt = inner_for_stmt->body->statements[s]->cast<GlobalPtrStmt>()) {
         TI_TRACE("FOUND GLOBAL PTR STMT");
@@ -449,18 +457,14 @@ void force_set_bls_size_offload(OffloadedStmt* offload, int pad_size = 128) {
         /**************************************************************/
         // bodies[j, 0/1/2] -> smem[0/1/2 * blockDim.x + threadIdx.x]
         VecStatement bls_load;
-        // auto local_load_offset = bls_load.push_back<BinaryOpStmt>(
-        //     BinaryOpType::add,
-        //     bls_load.push_back<ConstStmt>(
-        //         TypedConstant(index_xyz * pad_size)),
-        //     tid);
-        // auto local_load_offset_bytes = bls_load.push_back<BinaryOpStmt>(
-        //     BinaryOpType::mul, local_load_offset,
-        //     bls_load.push_back<ConstStmt>(
-        //         TypedConstant((int32) sizeof(float))));
         // Multiply the offset with element size
-        auto block_local_ptr =
-            bls_load.push_back<BlockLocalPtrStmt>(local_offsets[index_xyz], data_type);
+        // t + i * blockDim.x
+        auto load_local_offset = bls_load.push_back<BinaryOpStmt>(
+            BinaryOpType::add, inner_for_loop_idx,
+            bls_load.push_back<ConstStmt>(
+                TypedConstant((int32_t)index_xyz * pad_size * sizeof(float))));
+        auto block_local_ptr = bls_load.push_back<BlockLocalPtrStmt>(
+            load_local_offset, data_type);
         global_ptr_stmt->replace_with(std::move(bls_load));
       
         index_xyz++;
