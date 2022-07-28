@@ -390,14 +390,14 @@ class IRBuilder {
                               std::array<int, 3> local_size) {
     ib_.begin(spv::OpEntryPoint)
         .add_seq(spv::ExecutionModelGLCompute, func, name);
-    for (const auto &arg : args) {
-      ib_.add(arg);
-    }
-    if (device_->get_cap(DeviceCapability::spirv_version) >= 0x10400) {
-      for (const auto &v : global_values) {
-        ib_.add(v);
-      }
-    }
+    // for (const auto &arg : args) {
+    //   ib_.add(arg);
+    // }
+    // if (device_->get_cap(DeviceCapability::spirv_version) >= 0x10400) {
+    //   for (const auto &v : global_values) {
+    //     ib_.add(v);
+    //   }
+    // }
     if (gl_global_invocation_id_.id != 0) {
       ib_.add(gl_global_invocation_id_);
     }

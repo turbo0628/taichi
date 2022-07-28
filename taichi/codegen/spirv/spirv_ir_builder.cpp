@@ -26,23 +26,23 @@ void IRBuilder::init_header() {
   // capability
   ib_.begin(spv::OpCapability).add(spv::CapabilityShader).commit(&header_);
 
-  if (device_->get_cap(cap::spirv_has_atomic_float64_add)) {
-    ib_.begin(spv::OpCapability)
-        .add(spv::CapabilityAtomicFloat64AddEXT)
-        .commit(&header_);
-  }
+  // if (device_->get_cap(cap::spirv_has_atomic_float64_add)) {
+  //   ib_.begin(spv::OpCapability)
+  //       .add(spv::CapabilityAtomicFloat64AddEXT)
+  //       .commit(&header_);
+  // }
 
-  if (device_->get_cap(cap::spirv_has_atomic_float_add)) {
-    ib_.begin(spv::OpCapability)
-        .add(spv::CapabilityAtomicFloat32AddEXT)
-        .commit(&header_);
-  }
+  // if (device_->get_cap(cap::spirv_has_atomic_float_add)) {
+  //   ib_.begin(spv::OpCapability)
+  //       .add(spv::CapabilityAtomicFloat32AddEXT)
+  //       .commit(&header_);
+  // }
 
-  if (device_->get_cap(cap::spirv_has_atomic_float_minmax)) {
-    ib_.begin(spv::OpCapability)
-        .add(spv::CapabilityAtomicFloat32MinMaxEXT)
-        .commit(&header_);
-  }
+  // if (device_->get_cap(cap::spirv_has_atomic_float_minmax)) {
+  //   ib_.begin(spv::OpCapability)
+  //       .add(spv::CapabilityAtomicFloat32MinMaxEXT)
+  //       .commit(&header_);
+  // }
 
   if (device_->get_cap(cap::spirv_has_variable_ptr)) {
     /*
@@ -55,18 +55,18 @@ void IRBuilder::init_header() {
         */
   }
 
-  if (device_->get_cap(cap::spirv_has_int8)) {
-    ib_.begin(spv::OpCapability).add(spv::CapabilityInt8).commit(&header_);
-  }
+  // if (device_->get_cap(cap::spirv_has_int8)) {
+  //   ib_.begin(spv::OpCapability).add(spv::CapabilityInt8).commit(&header_);
+  // }
   if (device_->get_cap(cap::spirv_has_int16)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt16).commit(&header_);
   }
   if (device_->get_cap(cap::spirv_has_int64)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt64).commit(&header_);
   }
-  if (device_->get_cap(cap::spirv_has_float16)) {
-    ib_.begin(spv::OpCapability).add(spv::CapabilityFloat16).commit(&header_);
-  }
+  // if (device_->get_cap(cap::spirv_has_float16)) {
+  //   ib_.begin(spv::OpCapability).add(spv::CapabilityFloat16).commit(&header_);
+  // }
   if (device_->get_cap(cap::spirv_has_float64)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityFloat64).commit(&header_);
   }
@@ -80,39 +80,39 @@ void IRBuilder::init_header() {
       .add("SPV_KHR_storage_buffer_storage_class")
       .commit(&header_);
 
-  if (device_->get_cap(cap::spirv_has_variable_ptr)) {
-    ib_.begin(spv::OpExtension)
-        .add("SPV_KHR_variable_pointers")
-        .commit(&header_);
-  }
+  // if (device_->get_cap(cap::spirv_has_variable_ptr)) {
+  //   ib_.begin(spv::OpExtension)
+  //       .add("SPV_KHR_variable_pointers")
+  //       .commit(&header_);
+  // }
 
-  if (device_->get_cap(cap::spirv_has_atomic_float_add)) {
-    ib_.begin(spv::OpExtension)
-        .add("SPV_EXT_shader_atomic_float_add")
-        .commit(&header_);
-  }
+  // if (device_->get_cap(cap::spirv_has_atomic_float_add)) {
+  //   ib_.begin(spv::OpExtension)
+  //       .add("SPV_EXT_shader_atomic_float_add")
+  //       .commit(&header_);
+  // }
 
-  if (device_->get_cap(cap::spirv_has_atomic_float_minmax)) {
-    ib_.begin(spv::OpExtension)
-        .add("SPV_EXT_shader_atomic_float_min_max")
-        .commit(&header_);
-  }
+  // if (device_->get_cap(cap::spirv_has_atomic_float_minmax)) {
+  //   ib_.begin(spv::OpExtension)
+  //       .add("SPV_EXT_shader_atomic_float_min_max")
+  //       .commit(&header_);
+  // }
 
-  if (device_->get_cap(cap::spirv_has_physical_storage_buffer)) {
-    ib_.begin(spv::OpExtension)
-        .add("SPV_KHR_physical_storage_buffer")
-        .commit(&header_);
+  // if (device_->get_cap(cap::spirv_has_physical_storage_buffer)) {
+  //   ib_.begin(spv::OpExtension)
+  //       .add("SPV_KHR_physical_storage_buffer")
+  //       .commit(&header_);
 
-    // memory model
-    ib_.begin(spv::OpMemoryModel)
-        .add_seq(spv::AddressingModelPhysicalStorageBuffer64,
-                 spv::MemoryModelGLSL450)
-        .commit(&entry_);
-  } else {
+  //   // memory model
+  //   ib_.begin(spv::OpMemoryModel)
+  //       .add_seq(spv::AddressingModelPhysicalStorageBuffer64,
+  //                spv::MemoryModelGLSL450)
+  //       .commit(&entry_);
+  // } else {
     ib_.begin(spv::OpMemoryModel)
         .add_seq(spv::AddressingModelLogical, spv::MemoryModelGLSL450)
         .commit(&entry_);
-  }
+  // }
 
   this->init_pre_defs();
 }
@@ -477,7 +477,8 @@ SType IRBuilder::get_storage_image_type(BufferFormat format,
 
 SType IRBuilder::get_storage_pointer_type(const SType &value_type) {
   spv::StorageClass storage_class;
-  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  // if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  if (1) {
     storage_class = spv::StorageClassUniform;
   } else {
     storage_class = spv::StorageClassStorageBuffer;
@@ -543,7 +544,8 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
       .add_seq(struct_type, 0, spv::DecorationOffset, 0)
       .commit(&decorate_);
 
-  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  // if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  if (1) {
     // NOTE: BufferBlock was deprecated in SPIRV 1.3
     // use StorageClassStorageBuffer instead.
     // runtime array are always decorated as BufferBlock(shader storage buffer)
@@ -551,7 +553,8 @@ SType IRBuilder::get_struct_array_type(const SType &value_type,
       this->decorate(spv::OpDecorate, struct_type, spv::DecorationBufferBlock);
     }
   } else {
-    this->decorate(spv::OpDecorate, struct_type, spv::DecorationBlock);
+    // this->decorate(spv::OpDecorate, struct_type, spv::DecorationBlock);
+    this->decorate(spv::OpDecorate, struct_type, spv::DecorationBufferBlock);
   }
 
   return struct_type;
@@ -589,7 +592,8 @@ Value IRBuilder::buffer_struct_argument(const SType &struct_type,
   // NOTE: BufferBlock was deprecated in SPIRV 1.3
   // use StorageClassStorageBuffer instead.
   spv::StorageClass storage_class;
-  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  // if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  if (1) {
     storage_class = spv::StorageClassUniform;
   } else {
     storage_class = spv::StorageClassStorageBuffer;
@@ -597,7 +601,8 @@ Value IRBuilder::buffer_struct_argument(const SType &struct_type,
 
   this->debug(spv::OpName, struct_type, name + "_t");
 
-  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  // if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  if (1) {
     // NOTE: BufferBlock was deprecated in SPIRV 1.3
     // use StorageClassStorageBuffer instead.
     // runtime array are always decorated as BufferBlock(shader storage buffer)
@@ -659,7 +664,8 @@ Value IRBuilder::buffer_argument(const SType &value_type,
   // NOTE: BufferBlock was deprecated in SPIRV 1.3
   // use StorageClassStorageBuffer instead.
   spv::StorageClass storage_class;
-  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  // if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  if (1) {
     storage_class = spv::StorageClassUniform;
   } else {
     storage_class = spv::StorageClassStorageBuffer;
@@ -695,7 +701,8 @@ Value IRBuilder::struct_array_access(const SType &res_type,
   TI_ASSERT(res_type.flag == TypeKind::kPrimitive);
 
   spv::StorageClass storage_class;
-  if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  // if (device_->get_cap(cap::spirv_version) < 0x10300) {
+  if (1) {
     storage_class = spv::StorageClassUniform;
   } else {
     storage_class = spv::StorageClassStorageBuffer;

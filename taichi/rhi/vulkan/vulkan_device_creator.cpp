@@ -455,9 +455,9 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   if (api_version_ >= VK_API_VERSION_1_3) {
     ti_device_->set_cap(DeviceCapability::spirv_version, 0x10500);
   } else if (api_version_ >= VK_API_VERSION_1_2) {
-    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10500);
+    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10000);
   } else if (api_version_ >= VK_API_VERSION_1_1) {
-    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10300);
+    ti_device_->set_cap(DeviceCapability::spirv_version, 0x10000);
   }
 
   // Detect extensions

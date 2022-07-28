@@ -451,6 +451,8 @@ class Device {
   virtual ~Device(){};
 
   uint32_t get_cap(DeviceCapability capability_id) const {
+    if (capability_id == DeviceCapability::spirv_has_physical_storage_buffer)
+      return 0;
     if (caps_.find(capability_id) == caps_.end())
       return 0;
     return caps_.at(capability_id);

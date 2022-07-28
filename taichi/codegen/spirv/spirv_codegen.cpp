@@ -636,7 +636,8 @@ class TaskCodegen : public IRVisitor {
       ir_->decorate(spv::OpDecorate, linear_offset,
                     spv::DecorationNoSignedWrap);
     }
-    if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    // if (device_->get_cap(DeviceCapability::spirv_has_physical_storage_buffer)) {
+    if (0) {
       spirv::Value addr_ptr = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(ir_->u64_type(), spv::StorageClassUniform),
