@@ -18,10 +18,9 @@ int Callable::insert_ret(const DataType &dt) {
 }
 
 int Callable::insert_arr_arg(const DataType &dt,
-                             int total_dim,
-                             std::vector<int> element_shape) {
+                             int total_dim) {
   args.emplace_back(dt->get_compute_type(), /*is_array=*/true, /*size=*/0,
-                    total_dim, element_shape);
+                    total_dim);
   return (int)args.size() - 1;
 }
 

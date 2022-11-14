@@ -35,15 +35,15 @@ class TI_DLL_EXPORT Callable {
     explicit Arg(const DataType &dt = PrimitiveType::unknown,
                  bool is_array = false,
                  std::size_t size_unused = 0,
-                 int total_dim = 0,
-                 std::vector<int> element_shape = {}) {
-      if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
-        this->dt_ =
-            taichi::lang::TypeFactory::get_instance().create_tensor_type(
-                element_shape, dt);
-      } else {
+                 int total_dim = 0) {
+                 //  std::vector<int> element_shape = {}) {
+      // if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
+      //   this->dt_ =
+      //       taichi::lang::TypeFactory::get_instance().create_tensor_type(
+      //           element_shape, dt);
+      // } else {
         this->dt_ = dt;
-      }
+      // }
 
       this->is_array = is_array;
       this->total_dim = total_dim;
@@ -84,9 +84,13 @@ class TI_DLL_EXPORT Callable {
 
   int insert_scalar_arg(const DataType &dt);
 
+  // int insert_arr_arg(const DataType &dt,
+  //                    int total_dim,
+  //                    std::vector<int> element_shape);
+
   int insert_arr_arg(const DataType &dt,
-                     int total_dim,
-                     std::vector<int> element_shape);
+                     int total_dim);
+
   int insert_texture_arg(const DataType &dt);
 
   int insert_ret(const DataType &dt);

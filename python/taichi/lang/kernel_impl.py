@@ -392,19 +392,19 @@ class TaichiCallableTemplateMapper:
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
                                                        arg.m), Layout.AOS
             # external arrays
-            element_dim = 0 if anno.element_dim is None else anno.element_dim
+            # element_dim = 0 if anno.element_dim is None else anno.element_dim
             shape = getattr(arg, 'shape', None)
             if shape is None:
                 raise TaichiRuntimeTypeError(
                     f"Invalid argument into ti.types.ndarray(), got {arg}")
             shape = tuple(shape)
-            if len(shape) < element_dim:
-                raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, "
-                    f"but the argument has only {len(shape)} dimensions")
-            element_shape = () if element_dim == 0 else shape[-element_dim:]
+            # if len(shape) < element_dim:
+            #     raise ValueError(
+            #         f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, "
+            #         f"but the argument has only {len(shape)} dimensions")
+            # element_shape = () if element_dim == 0 else shape[-element_dim:]
             return to_taichi_type(
-                arg.dtype), len(shape), element_shape, Layout.AOS
+                arg.dtype), len(shape), Layout.AOS
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
@@ -698,12 +698,12 @@ class Kernel:
                     # The shape information for element dims are no longer needed.
                     # Therefore we strip the element shapes from the shape vector,
                     # so that it only holds "real" array shapes.
-                    is_soa = needed.layout == Layout.SOA
-                    array_shape = v.shape
-                    element_dim = needed.element_dim
-                    if element_dim:
-                        array_shape = v.shape[
-                            element_dim:] if is_soa else v.shape[:-element_dim]
+                    # is_soa = needed.layout == Layout.SOA
+                    # array_shape = v.shape
+                    # element_dim = needed.dtype.ndim
+                    # if element_dim:
+                    #     array_shape = v.shape[
+                    #         element_dim:] if is_soa else v.shape[:-element_dim]
                     if isinstance(v, np.ndarray):
                         if v.flags.c_contiguous:
                             launch_ctx.set_arg_external_array_with_shape(

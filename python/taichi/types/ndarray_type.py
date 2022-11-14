@@ -1,5 +1,6 @@
 from taichi.lang.enums import Layout
 from taichi.types.compound_types import TensorType
+import warnings
 
 
 class NdarrayTypeMetadata:
@@ -22,51 +23,82 @@ class NdarrayType:
     """
     def __init__(self,
                  dtype=None,
+                 ndim=None,
                  element_dim=None,
                  element_shape=None,
-                 field_dim=None):
+                 field_dim=None
+                ):
+        # print(f"dtype {dtype}")
+        print(f"ndim {ndim}")
+        # print(f"field_dim {field_dim}")
+        # print(f"element_dim {field_dim}")
+        # print(f"element_shape {element_shape}")
+        # print(element_dim)
+        # print(element_shape)
+        # print(field_dim)
+        # ndim = field_dim
+
+        import warnings  # pylint: disable=C0415,W0621
+        if field_dim != None:
+            warnings.warn(
+                f'field_dim in ndarray is deprecated. Please use ndim instead.',
+                DeprecationWarning)
+            if ndim == None:
+                ndim = field_dim
+
+        if element_dim != None:
+            warnings.warn(
+                f'element_dim in ndarray is deprecated.',
+                DeprecationWarning)
+
+        if element_shape != None:
+            warnings.warn(
+                f'element_shape in ndarray is deprecated.',
+                DeprecationWarning)
+        
         if element_dim is not None and (element_dim < 0 or element_dim > 2):
             raise ValueError(
                 "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
             )
-        if element_dim is not None and element_shape is not None and len(
-                element_shape) != element_dim:
-            raise ValueError(
-                f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
-            )
-        self.dtype = dtype
-        self.element_shape = element_shape
-        self.element_dim = len(
-            element_shape) if element_shape is not None else element_dim
 
-        self.field_dim = field_dim
+        # if element_dim is not None and element_shape is not None and len(
+        #         element_shape) != element_dim:
+        #     raise ValueError(
+        #         f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
+        #     )
+        self.dtype = dtype
+        self.ndim = ndim
+        # self.element_shape = element_shape
+        # self.element_dim = len(
+        #     element_shape) if element_shape is not None else element_dim
+
         self.layout = Layout.AOS
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):
-        if self.element_dim is not None and self.element_dim > 0:
-            if not isinstance(ndarray_type.element_type, TensorType):
-                raise TypeError(
-                    f"Expect TensorType element for Ndarray with element_dim: {self.element_dim} > 0"
-                )
-            if self.element_dim != len(ndarray_type.element_type.shape()):
-                raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element_dim={self.element_dim}, but {len(ndarray_type.element_type.shape())} is provided"
-                )
+        # if self.element_dim is not None and self.element_dim > 0:
+        #     if not isinstance(ndarray_type.element_type, TensorType):
+        #         raise TypeError(
+        #             f"Expect TensorType element for Ndarray with element_dim: {self.element_dim} > 0"
+        #         )
+        #     if self.element_dim != len(ndarray_type.element_type.shape()):
+        #         raise ValueError(
+        #             f"Invalid argument into ti.types.ndarray() - required element_dim={self.element_dim}, but {len(ndarray_type.element_type.shape())} is provided"
+        #         )
 
-        if self.element_shape is not None and len(self.element_shape) > 0:
-            if not isinstance(ndarray_type.element_type, TensorType):
-                raise TypeError(
-                    f"Expect TensorType element for Ndarray with element_shape: {self.element_shape}"
-                )
+        # if self.element_shape is not None and len(self.element_shape) > 0:
+        #     if not isinstance(ndarray_type.element_type, TensorType):
+        #         raise TypeError(
+        #             f"Expect TensorType element for Ndarray with element_shape: {self.element_shape}"
+        #         )
 
-            if self.element_shape != ndarray_type.element_type.shape():
-                raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element_shape={self.element_shape}, but {ndarray_type.element_type.shape()} is provided"
-                )
+        #     if self.element_shape != ndarray_type.element_type.shape():
+        #         raise ValueError(
+        #             f"Invalid argument into ti.types.ndarray() - required element_shape={self.element_shape}, but {ndarray_type.element_type.shape()} is provided"
+        #         )
 
-        if self.field_dim is not None and \
+        if self.ndim is not None and \
             ndarray_type.shape is not None and \
-            self.field_dim != len(ndarray_type.shape):
+            self.ndim != len(ndarray_type.shape):
             raise ValueError(
                 f"Invalid argument into ti.types.ndarray() - required field_dim={self.field_dim}, but {ndarray_type.element_type} is provided"
             )

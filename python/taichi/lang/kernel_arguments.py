@@ -76,9 +76,9 @@ def decl_sparse_matrix(dtype):
         _ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
 
-def decl_ndarray_arg(dtype, dim, element_shape, layout):
+def decl_ndarray_arg(dtype, dim, layout):
     dtype = cook_dtype(dtype)
-    element_dim = len(element_shape)
+    # element_dim = len(element_shape)
     arg_id = impl.get_runtime().prog.decl_arr_arg(dtype, dim, element_shape)
     if layout == Layout.AOS:
         element_dim = -element_dim

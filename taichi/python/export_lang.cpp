@@ -442,10 +442,8 @@ void export_lang(py::module &m) {
              return program->current_callable->insert_scalar_arg(dt);
            })
       .def("decl_arr_arg",
-           [&](Program *program, const DataType &dt, int total_dim,
-               std::vector<int> shape) {
-             return program->current_callable->insert_arr_arg(dt, total_dim,
-                                                              shape);
+           [&](Program *program, const DataType &dt, int total_dim) {
+             return program->current_callable->insert_arr_arg(dt, total_dim);
            })
       .def("decl_texture_arg",
            [&](Program *program, const DataType &dt) {
