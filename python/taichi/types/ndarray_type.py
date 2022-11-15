@@ -28,16 +28,6 @@ class NdarrayType:
                  element_shape=None,
                  field_dim=None
                 ):
-        # print(f"dtype {dtype}")
-        print(f"ndim {ndim}")
-        # print(f"field_dim {field_dim}")
-        # print(f"element_dim {field_dim}")
-        # print(f"element_shape {element_shape}")
-        # print(element_dim)
-        # print(element_shape)
-        # print(field_dim)
-        # ndim = field_dim
-
         import warnings  # pylint: disable=C0415,W0621
         if field_dim != None:
             warnings.warn(
@@ -47,31 +37,13 @@ class NdarrayType:
                 ndim = field_dim
 
         if element_dim != None:
-            warnings.warn(
-                f'element_dim in ndarray is deprecated.',
-                DeprecationWarning)
+            raise ValueError('The element dim argument in ndarray is no longer supported in releases')
 
         if element_shape != None:
-            warnings.warn(
-                f'element_shape in ndarray is deprecated.',
-                DeprecationWarning)
+            raise ValueError('The element shape argument in ndarray is no longer supported in releases')
         
-        if element_dim is not None and (element_dim < 0 or element_dim > 2):
-            raise ValueError(
-                "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
-            )
-
-        # if element_dim is not None and element_shape is not None and len(
-        #         element_shape) != element_dim:
-        #     raise ValueError(
-        #         f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
-        #     )
         self.dtype = dtype
         self.ndim = ndim
-        # self.element_shape = element_shape
-        # self.element_dim = len(
-        #     element_shape) if element_shape is not None else element_dim
-
         self.layout = Layout.AOS
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):

@@ -76,14 +76,14 @@ def decl_sparse_matrix(dtype):
         _ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
 
-def decl_ndarray_arg(dtype, dim, layout):
+def decl_ndarray_arg(dtype, ndim, layout):
     dtype = cook_dtype(dtype)
-    # element_dim = len(element_shape)
-    arg_id = impl.get_runtime().prog.decl_arr_arg(dtype, dim, element_shape)
-    if layout == Layout.AOS:
-        element_dim = -element_dim
+    element_dim = 0
+    element_shape= ()
+    arg_id = impl.get_runtime().prog.decl_arr_arg(dtype, ndim)
+    # FIXME deprecate the use of element dim and element shape.
     return AnyArray(
-        _ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim,
+        _ti_core.make_external_tensor_expr(dtype, ndim, arg_id, element_dim,
                                            element_shape))
 
 

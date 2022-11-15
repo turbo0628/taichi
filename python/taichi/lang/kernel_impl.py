@@ -392,17 +392,11 @@ class TaichiCallableTemplateMapper:
                 return arg.dtype, len(arg.shape) + 2, (arg.n,
                                                        arg.m), Layout.AOS
             # external arrays
-            # element_dim = 0 if anno.element_dim is None else anno.element_dim
             shape = getattr(arg, 'shape', None)
             if shape is None:
                 raise TaichiRuntimeTypeError(
                     f"Invalid argument into ti.types.ndarray(), got {arg}")
             shape = tuple(shape)
-            # if len(shape) < element_dim:
-            #     raise ValueError(
-            #         f"Invalid argument into ti.types.ndarray() - required element_dim={element_dim}, "
-            #         f"but the argument has only {len(shape)} dimensions")
-            # element_shape = () if element_dim == 0 else shape[-element_dim:]
             return to_taichi_type(
                 arg.dtype), len(shape), Layout.AOS
         if isinstance(anno, sparse_matrix_builder):
@@ -694,21 +688,17 @@ class Kernel:
                                     v, taichi.lang._texture.Texture):
                     launch_ctx.set_arg_rw_texture(actual_argument_slot, v.tex)
                 elif isinstance(needed, ndarray_type.NdarrayType):
+                    # FIXME broken comments:
+
                     # Element shapes are already specialized in Taichi codegen.
                     # The shape information for element dims are no longer needed.
                     # Therefore we strip the element shapes from the shape vector,
                     # so that it only holds "real" array shapes.
-                    # is_soa = needed.layout == Layout.SOA
-                    # array_shape = v.shape
-                    # element_dim = needed.dtype.ndim
-                    # if element_dim:
-                    #     array_shape = v.shape[
-                    #         element_dim:] if is_soa else v.shape[:-element_dim]
                     if isinstance(v, np.ndarray):
                         if v.flags.c_contiguous:
                             launch_ctx.set_arg_external_array_with_shape(
                                 actual_argument_slot, int(v.ctypes.data),
-                                v.nbytes, array_shape)
+                                v.nbytes, v.shape)
                         elif v.flags.f_contiguous:
                             # TODO: A better way that avoids copying is saving strides info.
                             tmp = np.ascontiguousarray(v)
@@ -722,7 +712,7 @@ class Kernel:
                                 functools.partial(callback, v, tmp))
                             launch_ctx.set_arg_external_array_with_shape(
                                 actual_argument_slot, int(tmp.ctypes.data),
-                                tmp.nbytes, array_shape)
+                                tmp.nbytes, v.shape)
                         else:
                             raise ValueError(
                                 "Non contiguous numpy arrays are not supported, please call np.ascontiguousarray(arr) before passing it into taichi kernel."
