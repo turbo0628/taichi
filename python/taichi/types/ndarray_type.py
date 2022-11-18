@@ -92,7 +92,7 @@ class NdarrayType:
         # TODO Replace CompoundType with MatrixType and VectorType
         if isinstance(self.dtype, CompoundType):
             element_dim = self.dtype.ndim
-            element_shape = self.dtype.shape()
+            element_shape = self.dtype.get_shape()
             if element_dim is not None and element_dim > 0:
                 if not isinstance(ndarray_type.element_type, TensorType):
                     raise TypeError(
