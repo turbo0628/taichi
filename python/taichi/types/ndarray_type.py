@@ -1,7 +1,10 @@
 import warnings
 
+from taichi.lang import impl
 from taichi.lang.enums import Layout
-from taichi.types.compound_types import CompoundType, TensorType
+from taichi.types import primitive_types
+from taichi.types.compound_types import (CompoundType, TensorType, matrix,
+                                         vector)
 
 
 class NdarrayTypeMetadata:
@@ -9,6 +12,49 @@ class NdarrayTypeMetadata:
         self.element_type = element_type
         self.shape = shape
         self.layout = Layout.AOS
+
+
+def make_matrix_dtype_from_element_shape(element_dim, element_shape,
+                                         primitive_dtype):
+    # Cook primitive dtype
+    if primitive_dtype is None:
+        primitive_dtype = impl.get_runtime().default_fp
+
+    if not id(primitive_dtype) in primitive_types.type_ids:
+        raise TypeError(
+            f"Cannot specifiy matrix dtype {primitive_dtype} and element shape or dim at the same time."
+        )
+
+    # Scalars
+    if element_dim == 0 or (element_shape is not None
+                            and len(element_shape) == 0):
+        return primitive_dtype
+
+    # Cook element dim and shape into matrix type.
+    mat_dtype = None
+    if element_dim is not None:
+        if element_dim < 0 or element_dim > 2:
+            raise ValueError(
+                "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
+            )
+        # Check dim consistency. The matrix dtype will be cooked later.
+        if element_shape is not None and len(element_shape != element_dim):
+            raise ValueError(
+                f"Both element_shape and element_dim are specified, but shape doesn't match specified dim: {len(element_shape)}!={element_dim}"
+            )
+        mat_dtype = vector(None,
+                           primitive_dtype) if element_dim == 1 else matrix(
+                               None, None, primitive_dtype)
+    if element_shape is not None:
+        if len(element_shape) > 2:
+            raise ValueError(
+                "Only scalars, vectors, and matrices are allowed as elements of ti.types.ndarray()"
+            )
+        mat_dtype = vector(
+            element_shape[0],
+            primitive_dtype) if len(element_shape) == 1 else matrix(
+                element_shape[0], element_shape[1], primitive_dtype)
+    return mat_dtype
 
 
 class NdarrayType:
@@ -32,7 +78,11 @@ class NdarrayType:
             warnings.warn(
                 "The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.",
                 DeprecationWarning)
-        self.dtype = dtype
+            self.dtype = make_matrix_dtype_from_element_shape(
+                element_dim, element_shape, dtype)
+        else:
+            self.dtype = dtype
+
         self.field_dim = field_dim
         self.layout = Layout.AOS
 
