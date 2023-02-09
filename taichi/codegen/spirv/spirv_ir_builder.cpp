@@ -53,6 +53,26 @@ void IRBuilder::init_header() {
         .commit(&header_);
         */
   }
+  if (caps_->get(cap::spirv_has_subgroup_basic)) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityGroupNonUniform)
+        .commit(&header_);
+  }
+  if (caps_->get(cap::spirv_has_subgroup_ballot)) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilitySubgroupBallotKHR)
+        .commit(&header_);
+  }
+  if (caps_->get(cap::spirv_has_subgroup_vote)) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilitySubgroupVoteKHR)
+        .commit(&header_);
+  }
+  if (caps_->get(cap::spirv_has_subgroup_arithmetic)) {
+    ib_.begin(spv::OpCapability)
+        .add(spv::CapabilityGroupNonUniformArithmetic)
+        .commit(&header_);
+  }
 
   if (caps_->get(cap::spirv_has_int8)) {
     ib_.begin(spv::OpCapability).add(spv::CapabilityInt8).commit(&header_);
@@ -173,6 +193,7 @@ void IRBuilder::init_pre_defs() {
   if (caps_->get(cap::spirv_has_float64)) {
     t_fp64_ = declare_primitive_type(get_data_type<float64>());
   }
+
   // declare void, and void functions
   t_void_.id = id_counter_++;
   ib_.begin(spv::OpTypeVoid).add(t_void_).commit(&global_);
