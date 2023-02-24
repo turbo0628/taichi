@@ -165,7 +165,8 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   } else if (dt->is<TensorType>()) {
     auto tensor_type = dt->cast<TensorType>();
     auto element_type = get_data_type(tensor_type->get_element_type());
-    auto num_elements = tensor_type->get_num_elements();
+    // auto num_elements = tensor_type->get_num_elements();
+    int num_elements = 0;
     // Return type is <element_type * num_elements> if real matrix is used,
     // otherwise [element_type * num_elements].
     if (codegen_vector_type(config_)) {

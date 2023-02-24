@@ -34,6 +34,16 @@ JITModule *JITSessionCUDA ::add_module(std::unique_ptr<llvm::Module> M,
     option_values[num_options] = &max_reg;
     num_options++;
   }
+  // // Insert options
+  // int sm = 86;
+  // options[num_options] = 9;
+  // option_values[num_options] = &sm;
+  // num_options++;
+
+  int CU_True = 1;
+  options[num_options] = 12;
+  option_values[num_options] = &CU_True;
+  num_options++;
 
   TI_ASSERT(num_options <= max_num_options);
 
@@ -121,6 +131,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   options.NoZerosInBSS = 0;
   options.GuaranteedTailCallOpt = 0;
 
+  TI_TRACE("Triple {}", triple.str());
   std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
       triple.str(), CUDAContext::get_instance().get_mcpu(), cuda_mattrs(),
       options, llvm::Reloc::PIC_, llvm::CodeModel::Small,

@@ -100,6 +100,8 @@ class Offloader {
         } else {
           offloaded->block_dim = s->block_dim;
         }
+        offloaded->dynamic_shared_array_size = s->dynamic_shared_array_size;
+        TI_TRACE("444444OFFLOADED RANGE SIZE {}", offloaded->dynamic_shared_array_size);
         if (auto val = s->begin->cast<ConstStmt>()) {
           offloaded->const_begin = true;
           offloaded->begin_value = val->val.val_int32();

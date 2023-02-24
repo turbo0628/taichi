@@ -505,6 +505,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         current_task->grid_dim = num_SMs * query_max_block_per_sm;
       }
       current_task->block_dim = stmt->block_dim;
+      TI_TRACE("SHARED ARR SIZE {} IN CODE GEN", stmt->dynamic_shared_array_size);
+      current_task->dynamic_shared_array_size = stmt->dynamic_shared_array_size;
       TI_ASSERT(current_task->grid_dim != 0);
       TI_ASSERT(current_task->block_dim != 0);
       offloaded_tasks.push_back(*current_task);
@@ -701,7 +703,10 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     for (auto task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                task.block_dim);
-      cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
+      // if (task.dynamic_shared_array_size > 0) {
+        TI_TRACE("Request dynamic shared array size {} bytes.", task.dynamic_shared_array_size);
+      // }
+      cuda_module->launch(task.name, task.grid_dim, task.block_dim, task.dynamic_shared_array_size,
                           {&context}, {});
     }
 

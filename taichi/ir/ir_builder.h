@@ -106,7 +106,7 @@ class IRBuilder {
                                  bool is_bit_vectorized = false,
                                  int num_cpu_threads = 0,
                                  int block_dim = 0,
-                                 bool strictly_serialized = false);
+                                 bool strictly_serialized = false, int dynamic_shared_array_size=0);
   StructForStmt *create_struct_for(SNode *snode,
                                    bool is_bit_vectorized = false,
                                    int num_cpu_threads = 0,

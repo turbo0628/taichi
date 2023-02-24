@@ -203,6 +203,7 @@ class LowerAST : public IRVisitor {
 
   void visit(FrontendForStmt *stmt) override {
     auto fctx = make_flatten_ctx();
+    TI_TRACE("1111Using dynamic shared array size {}", stmt->dynamic_shared_array_size);
     if (stmt->snode) {
       auto snode = stmt->snode;
       std::vector<int> offsets;
@@ -272,10 +273,11 @@ class LowerAST : public IRVisitor {
       for (int i = 0; i < (int)shape.size(); i++) {
         end = fctx.push_back<BinaryOpStmt>(BinaryOpType::mul, end, shape[i]);
       }
+      TI_TRACE("2222Using dynamic shared array size {}", stmt->dynamic_shared_array_size);
       // TODO: add a note explaining why shape might be empty.
       auto &&new_for = std::make_unique<RangeForStmt>(
           begin, end, std::move(stmt->body), stmt->is_bit_vectorized,
-          stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized,
+          stmt->num_cpu_threads, stmt->block_dim, stmt->strictly_serialized, stmt->dynamic_shared_array_size,
           /*range_hint=*/fmt::format("arg {}", arg_id));
       VecStatement new_statements;
       Stmt *loop_index =
@@ -314,10 +316,11 @@ class LowerAST : public IRVisitor {
       // #578: a good range for is a range for that doesn't contain a break
       // statement
       if (is_good_range_for) {
+        TI_TRACE("2222XXXXUsing dynamic shared array size {}", stmt->dynamic_shared_array_size);
         auto &&new_for = std::make_unique<RangeForStmt>(
             begin_stmt, end_stmt, std::move(stmt->body),
             stmt->is_bit_vectorized, stmt->num_cpu_threads, stmt->block_dim,
-            stmt->strictly_serialized);
+            stmt->strictly_serialized, stmt->dynamic_shared_array_size);
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
         new_for->body->local_var_to_stmt[stmt->loop_var_ids[0]] =

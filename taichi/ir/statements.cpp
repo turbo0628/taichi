@@ -183,6 +183,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
                            int num_cpu_threads,
                            int block_dim,
                            bool strictly_serialized,
+                           int dynamic_shared_array_size,
                            std::string range_hint)
     : begin(begin),
       end(end),
@@ -191,9 +192,11 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim),
       strictly_serialized(strictly_serialized),
+      dynamic_shared_array_size(dynamic_shared_array_size),
       range_hint(range_hint) {
   reversed = false;
   this->body->parent_stmt = this;
+  TI_TRACE("HHHHHHHHcreating range for with shared mem size {}", dynamic_shared_array_size);
   TI_STMT_REG_FIELDS;
 }
 
@@ -334,6 +337,7 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->end_value = end_value;
   new_stmt->grid_dim = grid_dim;
   new_stmt->block_dim = block_dim;
+  new_stmt->dynamic_shared_array_size = dynamic_shared_array_size;
   new_stmt->reversed = reversed;
   new_stmt->is_bit_vectorized = is_bit_vectorized;
   new_stmt->num_cpu_threads = num_cpu_threads;

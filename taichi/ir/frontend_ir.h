@@ -22,6 +22,7 @@ struct ForLoopConfig {
   MemoryAccessOptions mem_access_opt;
   int block_dim{0};
   bool uniform{false};
+  int dynamic_shared_array_size{0};
 };
 
 // Frontend Statements
@@ -175,6 +176,7 @@ class FrontendForStmt : public Stmt {
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
+  int dynamic_shared_array_size;
 
   FrontendForStmt(const ExprGroup &loop_vars,
                   SNode *snode,
@@ -914,6 +916,7 @@ class ASTBuilder {
       config.mem_access_opt.clear();
       config.block_dim = 0;
       config.strictly_serialized = false;
+      config.dynamic_shared_array_size = 0;
     }
   };
 
@@ -1035,6 +1038,13 @@ class ASTBuilder {
       TI_ASSERT(bit::is_power_of_two(v));
     }
     for_loop_dec_.config.block_dim = v;
+  }
+
+  void dynamic_shared_array_size(int v) {
+    if (arch_ != Arch::cuda) {
+      TI_WARN("Dynamic shared array is only supported on CUDA backend. The option is generally ignored.");
+    }
+    for_loop_dec_.config.dynamic_shared_array_size = v;
   }
 
   void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field) {

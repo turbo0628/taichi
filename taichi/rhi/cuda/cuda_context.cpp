@@ -40,11 +40,10 @@ CUDAContext::CUDAContext()
 
   compute_capability_ = cc_major * 10 + cc_minor;
 
-  if (compute_capability_ > 75) {
-    // The NVPTX backend of LLVM 10.0.0 does not seem to support
-    // compute_capability > 75 yet. See
-    // llvm-10.0.0.src/build/lib/Target/NVPTX/NVPTXGenSubtargetInfo.inc
-    compute_capability_ = 75;
+  if (compute_capability_ > 86) {
+    // We currently support upto RTX30xx, most of them are sm_86
+    // TODO change me after LLVM nvptx backend adds support for RTX40xx[sm_9.x]
+    compute_capability_ = 86;
   }
 
   mcpu_ = fmt::format("sm_{}", compute_capability_);
@@ -83,7 +82,6 @@ void CUDAContext::launch(void *func,
   // a constant folding kernel may happen during a kernel launch
   // then profiler->start and profiler->stop mismatch.
   // TODO: should we keep the handle?
-
   KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
   if (profiler_) {
@@ -113,8 +111,11 @@ void CUDAContext::launch(void *func,
 
   if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock_);
+    // size_t dynamic_shared_mem_bytes_ = 96 * 1024;
+    TI_TRACE("Configure dynamic shared array size {} bytes", dynamic_shared_mem_bytes);
+    driver_.kernel_set_attribute(func, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, dynamic_shared_mem_bytes);
     driver_.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
-                          dynamic_shared_mem_bytes, nullptr,
+                      dynamic_shared_mem_bytes, nullptr,
                           arg_pointers.data(), nullptr);
   }
   if (profiler_)

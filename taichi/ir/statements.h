@@ -931,6 +931,7 @@ class RangeForStmt : public Stmt {
   int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
+  int dynamic_shared_array_size;
   std::string range_hint;
 
   RangeForStmt(Stmt *begin,
@@ -940,6 +941,7 @@ class RangeForStmt : public Stmt {
                int num_cpu_threads,
                int block_dim,
                bool strictly_serialized,
+               int dynamic_shared_array_size = 0,
                std::string range_hint = "");
 
   bool is_container_statement() const override {
@@ -958,7 +960,8 @@ class RangeForStmt : public Stmt {
                      is_bit_vectorized,
                      num_cpu_threads,
                      block_dim,
-                     strictly_serialized);
+                     strictly_serialized,
+                     dynamic_shared_array_size);
   TI_DEFINE_ACCEPT
 };
 
@@ -1314,6 +1317,7 @@ class OffloadedStmt : public Stmt {
   int num_cpu_threads{1};
   Stmt *end_stmt{nullptr};
   std::string range_hint = "";
+  int dynamic_shared_array_size{0};
 
   mesh::Mesh *mesh{nullptr};
   mesh::MeshElementType major_from_type;
@@ -1375,7 +1379,8 @@ class OffloadedStmt : public Stmt {
                      reversed,
                      num_cpu_threads,
                      index_offsets,
-                     mem_access_opt);
+                     mem_access_opt,
+                     dynamic_shared_array_size);
   TI_DEFINE_ACCEPT
 };
 

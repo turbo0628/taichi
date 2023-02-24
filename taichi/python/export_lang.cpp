@@ -323,6 +323,7 @@ void export_lang(py::module &m) {
       .def("parallelize", &ASTBuilder::parallelize)
       .def("strictly_serialize", &ASTBuilder::strictly_serialize)
       .def("block_dim", &ASTBuilder::block_dim)
+      .def("dynamic_shared_array_size", &ASTBuilder::dynamic_shared_array_size)
       .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
       .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
 

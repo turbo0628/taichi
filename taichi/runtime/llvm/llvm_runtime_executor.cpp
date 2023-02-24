@@ -94,6 +94,9 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
         &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
     int version{0};
     CUDADriver::get_instance().driver_get_version(&version);
+    int shared_memory_max_bytes{0};
+    CUDADriver::get_instance().device_get_attribute(
+        &shared_memory_max_bytes, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, nullptr);
     int query_max_block_per_sm{16};
     if (version >= 11000) {
       // query this attribute only when CUDA version is above 11.0

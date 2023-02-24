@@ -605,6 +605,11 @@ def _block_dim(dim):
     """
     get_runtime().compiling_callable.ast_builder().block_dim(dim)
 
+def _dynamic_shared_array_size(size):
+    """Set the size of dynamic shared memory in a kernel launch to `size`.
+    """
+    print(f"Dynamic shared mem size {size}")
+    get_runtime().compiling_callable.ast_builder().dynamic_shared_array_size(size)
 
 def _block_dim_adaptive(block_dim_adaptive):
     """Enable/Disable backends set block_dim adaptively.
@@ -626,7 +631,8 @@ def loop_config(*,
                 serialize=False,
                 parallelize=None,
                 block_dim_adaptive=True,
-                bit_vectorize=False):
+                bit_vectorize=False,
+                dynamic_shared_array_size=None):
     """Sets directives for the next loop
 
     Args:
@@ -635,6 +641,7 @@ def loop_config(*,
         parallelize (int): The number of threads to use on CPU
         block_dim_adaptive (bool): Whether to allow backends set block_dim adaptively, enabled by default
         bit_vectorize (bool): Whether to enable bit vectorization of struct fors on quant_arrays.
+        dynamic_shared_array_size (int): The size of dynamical shared memory reseverd at kernel launch, for CUDA backend only.
 
     Examples::
 
@@ -686,6 +693,9 @@ def loop_config(*,
 
     if bit_vectorize:
         _bit_vectorize()
+
+    if dynamic_shared_array_size is not None:
+        _dynamic_shared_array_size(dynamic_shared_array_size)
 
 
 def global_thread_idx():

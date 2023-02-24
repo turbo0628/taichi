@@ -30,6 +30,7 @@ constexpr uint32 CU_STREAM_NON_BLOCKING = 0x1;
 constexpr uint32 CU_MEM_ATTACH_GLOBAL = 0x1;
 constexpr uint32 CU_MEM_ADVISE_SET_PREFERRED_LOCATION = 3;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 2;
+constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK = 8;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR = 106;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 16;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75;
@@ -85,6 +86,9 @@ class CUDADriverFunction {
   // Note: CUDA driver API passes everything as value
   void operator()(Args... args) {
     auto err = call(args...);
+    // if (err) {
+    //   TI_ERROR("AHHHHH");
+    // }
     TI_ERROR_IF(err, get_error_message(err));
   }
 

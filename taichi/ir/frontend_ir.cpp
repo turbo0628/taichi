@@ -84,6 +84,7 @@ void FrontendForStmt::init_config(Arch arch, const ForLoopConfig &config) {
   strictly_serialized = config.strictly_serialized;
   mem_access_opt = config.mem_access_opt;
   block_dim = config.block_dim;
+  dynamic_shared_array_size = config.dynamic_shared_array_size;
   if (arch == Arch::cuda || arch == Arch::amdgpu) {
     num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);

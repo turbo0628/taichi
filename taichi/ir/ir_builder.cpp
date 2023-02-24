@@ -88,10 +88,10 @@ RangeForStmt *IRBuilder::create_range_for(Stmt *begin,
                                           bool is_bit_vectorized,
                                           int num_cpu_threads,
                                           int block_dim,
-                                          bool strictly_serialized) {
+                                          bool strictly_serialized, int dynamic_shared_array_size) {
   return insert(Stmt::make_typed<RangeForStmt>(
       begin, end, std::make_unique<Block>(), is_bit_vectorized, num_cpu_threads,
-      block_dim, strictly_serialized));
+      block_dim, strictly_serialized, dynamic_shared_array_size));
 }
 
 StructForStmt *IRBuilder::create_struct_for(SNode *snode,
