@@ -88,19 +88,6 @@ class Offloader {
       }
     };
 
-    auto assemble_cpu_parallel_for_statements = [&]() {
-      // insert a new range for statement
-        auto offloaded = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::range_for, arch);
-        offloaded->grid_dim = config.saturating_grid_dim;
-        offloaded->begin_value = 0;
-        offloaded->end_value = 1;
-        offloaded->const_begin = true;
-        offloaded->const_end = true;
-        
-        // offloaded->end = get_const()
-    };
-
     for (int i = 0; i < (int)root_statements.size(); i++) {
       auto &stmt = root_statements[i];
       // Note that stmt->parent is root_block, which doesn't contain stmt now.
@@ -122,14 +109,13 @@ class Offloader {
           offloaded_ranges.begin_stmts.insert(
               std::make_pair(offloaded.get(), s->begin));
         }
-        if (arch_is_cpu(arch)) {
-          assemble_cpu_parallel_for_statements();
-        }
         
         // auto val = s->end->cast<ConstStmt>();
+        // offloaded->const_end = true;
+        // offloaded->end_value = val->val.val_int32();
         // if (auto val = s->end->cast<ConstStmt>()) {
-          // offloaded->const_end = true;
-          // offloaded->end_value = val->val.val_int32();
+        //   offloaded->const_end = true;
+        //   offloaded->end_value = val->val.val_int32();
         // } else {
         //   if ((arch == Arch::opengl || arch == Arch::vulkan ||
         //        arch == Arch::gles) &&
@@ -144,14 +130,34 @@ class Offloader {
         //       std::make_pair(offloaded.get(), s->end));
         // }
         
-        auto exp_const_stmt = Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 128));
-        offloaded->body->insert(std::move(exp_const_stmt));
-        offloaded_ranges.end_stmts.insert(
-            std::make_pair(offloaded.get(), s->end));
+        auto exp_const_stmt = Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 1));
+        offloaded->const_end = true;
+        offloaded->end_value = exp_const_stmt->val.val_int32(); 
+
+
+        // // Calucate range index in this loop block
+        // // Create const begin stmt
+        // auto begin_const_stmt = Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, s->begin->cast<ConstStmt>()->val.val_int32()));
+        // // Create const end stmt
+        // auto end_const_stmt = Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, s->end->cast<ConstStmt>()->val.val_int32()));
+
+        replace_all_usages_with(s, s, offloaded.get());
+
+        // Create an inner range for stmt
+        // auto inner_range = Stmt::make_typed<RangeForStmt>(begin_const_stmt.get(), end_const_stmt.get(), std::move(s->body), false, 1, 1, true);
+        auto inner_range = Stmt::make_typed<RangeForStmt>(s->begin, s->end, std::move(s->body), false, 1, 1, true);
+
+        replace_all_usages_with(inner_range.get(), offloaded.get(), inner_range.get());
+
+
+        offloaded->body->insert(std::move(inner_range));
+
+        
+        // offloaded->body->insert(std::move(begin_const_stmt));
+        // offloaded->body->insert(std::move(end_const_stmt));
 
         offloaded->num_cpu_threads =
             std::min(s->num_cpu_threads, config.cpu_max_num_threads);
-        // replace_all_usages_with(s, s, offloaded.get());
         // for (int j = 0; j < (int)s->body->statements.size(); j++) {
         //   offloaded->body->insert(std::move(s->body->statements[j]));
         // }
@@ -686,9 +692,9 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
                   const StmtToOffsetMap &local_to_global_offset,
                   const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded,
                   OffloadedRanges *offloaded_ranges) {
-    // FixCrossOffloadReferences pass(config, local_to_global_offset,
-    //                                stmt_to_offloaded, offloaded_ranges);
-    // root->accept(&pass);
+    FixCrossOffloadReferences pass(config, local_to_global_offset,
+                                   stmt_to_offloaded, offloaded_ranges);
+    root->accept(&pass);
   }
 
  private:
