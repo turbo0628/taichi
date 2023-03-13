@@ -95,73 +95,65 @@ class Offloader {
         assemble_serial_statements();
         auto offloaded = Stmt::make_typed<OffloadedStmt>(
             OffloadedStmt::TaskType::range_for, arch);
-        // // offloaded->body is an empty block now.
-        // offloaded->grid_dim = config.saturating_grid_dim;
+        // offloaded->body is an empty block now.
+        offloaded->grid_dim = config.saturating_grid_dim;
         if (s->block_dim == 0) {
           offloaded->block_dim = Program::default_block_dim(config);
         } else {
           offloaded->block_dim = s->block_dim;
         }
-        if (auto val = s->begin->cast<ConstStmt>()) {
+        if (arch_is_cpu(arch)) {
           offloaded->const_begin = true;
-          offloaded->begin_value = val->val.val_int32();
+          offloaded->begin_value = 0;
+          // auto end_mt_stmt=
+          //     Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, config.cpu_max_num_threads));
+          auto end_mt_stmt=
+              Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 1));
+          offloaded->const_end = true;
+          offloaded->end_value = end_mt_stmt->val.val_int32();
+          // Calucate range index in this loop block
+          // Create an inner range for stmt
+          replace_all_usages_with(s, s, offloaded.get());
+          auto inner_range = Stmt::make_typed<RangeForStmt>(
+              s->begin, s->end, std::move(s->body), false, 1, 1, true);
+          replace_all_usages_with(inner_range.get(), offloaded.get(),
+                                  inner_range.get());
+          offloaded->body->insert(std::move(inner_range));
         } else {
-          offloaded_ranges.begin_stmts.insert(
-              std::make_pair(offloaded.get(), s->begin));
+          if (auto val = s->begin->cast<ConstStmt>()) {
+            offloaded->const_begin = true;
+            offloaded->begin_value = val->val.val_int32();
+          } else {
+            offloaded_ranges.begin_stmts.insert(
+                std::make_pair(offloaded.get(), s->begin));
+          }
+
+          if (auto val = s->end->cast<ConstStmt>()) {
+            offloaded->const_end = true;
+            offloaded->end_value = val->val.val_int32();
+          } else {
+            if ((arch == Arch::opengl || arch == Arch::vulkan ||
+                 arch == Arch::gles) &&
+                demotable_axis_load(s->end)) {
+              // TODO: We need to update codegen for each backend gradually so
+              // let's limit it to opengl backend for now.
+              auto end_copy = s->end->clone();
+              offloaded->end_stmt = end_copy.get();
+              offloaded->body->insert(std::move(end_copy));
+            }
+            offloaded_ranges.end_stmts.insert(
+                std::make_pair(offloaded.get(), s->end));
+          }
         }
-        
-        // auto val = s->end->cast<ConstStmt>();
-        // offloaded->const_end = true;
-        // offloaded->end_value = val->val.val_int32();
-        // if (auto val = s->end->cast<ConstStmt>()) {
-        //   offloaded->const_end = true;
-        //   offloaded->end_value = val->val.val_int32();
-        // } else {
-        //   if ((arch == Arch::opengl || arch == Arch::vulkan ||
-        //        arch == Arch::gles) &&
-        //       demotable_axis_load(s->end)) {
-        //     // TODO: We need to update codegen for each backend gradually so
-        //     // let's limit it to opengl backend for now.
-        //     auto end_copy = s->end->clone();
-        //     offloaded->end_stmt = end_copy.get();
-        //     offloaded->body->insert(std::move(end_copy));
-        //   }
-        //   offloaded_ranges.end_stmts.insert(
-        //       std::make_pair(offloaded.get(), s->end));
-        // }
-        
-        auto exp_const_stmt = Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 1));
-        offloaded->const_end = true;
-        offloaded->end_value = exp_const_stmt->val.val_int32(); 
-
-
-        // // Calucate range index in this loop block
-        // // Create const begin stmt
-        // auto begin_const_stmt = Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, s->begin->cast<ConstStmt>()->val.val_int32()));
-        // // Create const end stmt
-        // auto end_const_stmt = Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, s->end->cast<ConstStmt>()->val.val_int32()));
-
-        replace_all_usages_with(s, s, offloaded.get());
-
-        // Create an inner range for stmt
-        // auto inner_range = Stmt::make_typed<RangeForStmt>(begin_const_stmt.get(), end_const_stmt.get(), std::move(s->body), false, 1, 1, true);
-        auto inner_range = Stmt::make_typed<RangeForStmt>(s->begin, s->end, std::move(s->body), false, 1, 1, true);
-
-        replace_all_usages_with(inner_range.get(), offloaded.get(), inner_range.get());
-
-
-        offloaded->body->insert(std::move(inner_range));
-
-        
-        // offloaded->body->insert(std::move(begin_const_stmt));
-        // offloaded->body->insert(std::move(end_const_stmt));
-
         offloaded->num_cpu_threads =
             std::min(s->num_cpu_threads, config.cpu_max_num_threads);
-        // for (int j = 0; j < (int)s->body->statements.size(); j++) {
-        //   offloaded->body->insert(std::move(s->body->statements[j]));
-        // }
-        // offloaded->range_hint = s->range_hint;
+        if (!arch_is_cpu(arch)) {
+          replace_all_usages_with(s, s, offloaded.get());
+          for (int j = 0; j < (int)s->body->statements.size(); j++) {
+            offloaded->body->insert(std::move(s->body->statements[j]));
+          }
+          offloaded->range_hint = s->range_hint;
+        }
         root_block->insert(std::move(offloaded));
       } else if (auto st = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();
