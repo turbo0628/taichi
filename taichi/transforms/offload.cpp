@@ -105,20 +105,45 @@ class Offloader {
         if (arch_is_cpu(arch)) {
           offloaded->const_begin = true;
           offloaded->begin_value = 0;
-          // auto end_mt_stmt=
-          //     Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, config.cpu_max_num_threads));
-          auto end_mt_stmt=
-              Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 1));
+          auto thread_num_stmt=
+              Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, config.cpu_max_num_threads));
+          // auto thread_num_stmt =
+          //     Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 1));
           offloaded->const_end = true;
-          offloaded->end_value = end_mt_stmt->val.val_int32();
-          // Calucate range index in this loop block
-          // Create an inner range for stmt
+          offloaded->end_value = thread_num_stmt->val.val_int32();
           replace_all_usages_with(s, s, offloaded.get());
-          auto inner_range = Stmt::make_typed<RangeForStmt>(
-              s->begin, s->end, std::move(s->body), false, 1, 1, true);
-          replace_all_usages_with(inner_range.get(), offloaded.get(),
-                                  inner_range.get());
-          offloaded->body->insert(std::move(inner_range));
+          // auto mt_index_stmts = Stmt::make_typed<Block>();
+          // stmt_vector mt_index_stmts;
+          // mt_index_stmts.push_back()
+          auto loop_index = Stmt::make_typed<LoopIndexStmt>(offloaded.get(), 0);
+          auto one = Stmt::make_typed<ConstStmt>(
+                         TypedConstant(PrimitiveType::i32, 1));
+          auto travel = Stmt::make_typed<BinaryOpStmt>(BinaryOpType::sub, s->end, s->begin);
+          auto block_stride_ = Stmt::make_typed<BinaryOpStmt>(BinaryOpType::div, travel.get(), thread_num_stmt.get());
+          auto block_stride = Stmt::make_typed<BinaryOpStmt>(
+              BinaryOpType::max, block_stride_.get(), one.get());
+          auto block_start_ = Stmt::make_typed<BinaryOpStmt>(BinaryOpType::mul, block_stride.get(), loop_index.get()); 
+          auto block_start = Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, s->begin, block_start_.get()); 
+          auto block_end_ = Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, block_start.get(), block_stride.get()); 
+          auto block_end = Stmt::make_typed<BinaryOpStmt>(BinaryOpType::min, block_end_.get(), s->end); 
+
+          // Create an inner range for stmt
+          auto inner_loop = Stmt::make_typed<RangeForStmt>(
+              block_start.get(), block_end.get(), std::move(s->body), false, 1, 1, true);
+          replace_all_usages_with(inner_loop.get(), offloaded.get(),
+                                  inner_loop.get());
+          // Calucate range index in this loop block
+          offloaded->body->insert(std::move(loop_index));
+          offloaded->body->insert(std::move(thread_num_stmt));
+          offloaded->body->insert(std::move(one));
+          offloaded->body->insert(std::move(travel));
+          offloaded->body->insert(std::move(block_stride_));
+          offloaded->body->insert(std::move(block_stride));
+          offloaded->body->insert(std::move(block_start_));
+          offloaded->body->insert(std::move(block_start));
+          offloaded->body->insert(std::move(block_end_));
+          offloaded->body->insert(std::move(block_end));
+          offloaded->body->insert(std::move(inner_loop));
         } else {
           if (auto val = s->begin->cast<ConstStmt>()) {
             offloaded->const_begin = true;
